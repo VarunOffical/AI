@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maya — UGC Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ── RESET & ROOT ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:   #f5f0e8;
+    --ink:     #1a1612;
+    --gold:    #c9a84c;
+    --gold-lt: #e8d5a3;
+    --warm:    #e8ddd0;
+    --accent:  #8b3a3a;
+    --muted:   #7a7068;
+  }
+
+  /* hide default cursor everywhere */
+  *, html { cursor: none !important; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* ── CUSTOM CURSOR ── */
+  #cursor-ring {
+    position: fixed; top: 0; left: 0; z-index: 9999;
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%,-50%);
+    transition: width .25s, height .25s, border-color .25s, background .2s;
+    mix-blend-mode: multiply;
+  }
+  #cursor-dot {
+    position: fixed; top: 0; left: 0; z-index: 10000;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%,-50%);
+  }
+  body.cursor-hover #cursor-ring {
+    width: 60px; height: 60px;
+    background: rgba(201,168,76,.12);
+    border-color: var(--accent);
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.4rem 5vw;
+    background: rgba(245,240,232,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201,168,76,.2);
+    transition: box-shadow .3s;
+  }
+  nav.scrolled { box-shadow: 0 2px 24px rgba(26,22,18,.08); }
+
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.9rem; font-weight: 300; letter-spacing: .12em;
+    color: var(--ink); text-decoration: none;
+  }
+  .nav-logo span { color: var(--gold); }
+
+  .nav-links { display: flex; gap: 2.4rem; list-style: none; }
+  .nav-links a {
+    font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); text-decoration: none;
+    position: relative; padding-bottom: 2px;
+    transition: color .25s;
+  }
+  .nav-links a::after {
+    content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1px;
+    background: var(--gold); transition: width .35s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:hover::after { width: 100%; }
+
+  .nav-cta {
+    font-size: .7rem; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--cream); background: var(--ink);
+    padding: .65rem 1.6rem; text-decoration: none;
+    border: 1px solid var(--ink);
+    transition: background .25s, color .25s;
+  }
+  .nav-cta:hover { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+
+  .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; padding: 4px; }
+  .hamburger span { width: 24px; height: 1.5px; background: var(--ink); display: block; transition: .3s; }
+
+  /* ── HERO ── */
+  #home {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 0 5vw;
+    padding-top: 90px;
+    position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 80% 50%, rgba(201,168,76,.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 10% 90%, rgba(139,58,58,.05) 0%, transparent 60%);
+  }
+  .hero-grain {
+    position: absolute; inset: 0; opacity: .04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .hero-content { position: relative; z-index: 2; max-width: 680px; }
+  .hero-tag {
+    display: inline-block;
+    font-size: .65rem; letter-spacing: .35em; text-transform: uppercase;
+    color: var(--gold); border: 1px solid var(--gold-lt);
+    padding: .4rem 1rem; margin-bottom: 2rem;
+    animation: fadeUp .8s ease both;
+  }
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3.2rem, 7vw, 6rem);
+    font-weight: 300; line-height: 1.05; letter-spacing: -.01em;
+    margin-bottom: 1.8rem;
+    animation: fadeUp .8s .15s ease both;
+  }
+  .hero-title em { font-style: italic; color: var(--gold); }
+  .hero-sub {
+    font-size: .85rem; line-height: 1.9; color: var(--muted);
+    max-width: 460px; margin-bottom: 2.8rem;
+    animation: fadeUp .8s .3s ease both;
+  }
+  .hero-btns {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    animation: fadeUp .8s .45s ease both;
+  }
+  .btn-primary {
+    font-size: .72rem; letter-spacing: .2em; text-transform: uppercase;
+    padding: 1rem 2.4rem; background: var(--ink); color: var(--cream);
+    text-decoration: none; border: 1px solid var(--ink);
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .btn-primary:hover { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+  .btn-ghost {
+    font-size: .72rem; letter-spacing: .2em; text-transform: uppercase;
+    padding: 1rem 2.4rem; background: transparent; color: var(--ink);
+    text-decoration: none; border: 1px solid var(--ink);
+    transition: background .25s, color .25s;
+  }
+  .btn-ghost:hover { background: var(--warm); }
+
+  .hero-visual {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 46vw; max-width: 680px; height: 88vh;
+    overflow: hidden; clip-path: polygon(8% 0, 100% 0, 100% 100%, 0% 100%);
+    animation: slideIn .9s .1s ease both;
+  }
+  .hero-mosaic {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    height: 100%; padding: 0 0 0 40px;
+  }
+  .hero-mosaic .cell {
+    overflow: hidden; position: relative;
+  }
+  .hero-mosaic .cell:first-child { grid-row: span 2; }
+  .hero-mosaic .cell img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .6s ease;
+  }
+  .hero-mosaic .cell:hover img { transform: scale(1.04); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    background: var(--ink); color: var(--cream);
+    display: flex; justify-content: space-around; flex-wrap: wrap;
+    gap: 0; padding: 2.4rem 5vw;
+    border-top: 1px solid rgba(201,168,76,.3);
+  }
+  .stat { text-align: center; padding: .8rem 1.5rem; }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem; font-weight: 400; color: var(--gold); display: block;
+  }
+  .stat-label { font-size: .65rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(245,240,232,.55); }
+
+  /* ── SECTION COMMONS ── */
+  section { padding: 7rem 5vw; }
+  .section-eyebrow {
+    font-size: .65rem; letter-spacing: .35em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+    font-weight: 300; line-height: 1.1; margin-bottom: 1.4rem;
+  }
+  .section-title em { font-style: italic; color: var(--gold); }
+  .section-sub { font-size: .83rem; line-height: 1.85; color: var(--muted); max-width: 520px; }
+  .divider {
+    width: 40px; height: 1px; background: var(--gold);
+    margin: 1.6rem 0;
+  }
+
+  /* ── SERVICES ── */
+  #services { background: var(--warm); }
+  .services-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2px; margin-top: 4rem;
+  }
+  .service-card {
+    background: var(--cream); padding: 3rem 2.2rem;
+    position: relative; overflow: hidden;
+    transition: background .3s;
+  }
+  .service-card::before {
+    content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px;
+    background: var(--gold); transition: width .4s;
+  }
+  .service-card:hover { background: #f0ead8; }
+  .service-card:hover::before { width: 100%; }
+  .service-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.5rem; font-weight: 300; color: rgba(201,168,76,.2);
+    line-height: 1; margin-bottom: 1.2rem;
+  }
+  .service-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; margin-bottom: .8rem; font-weight: 500;
+  }
+  .service-desc { font-size: .78rem; line-height: 1.8; color: var(--muted); }
+
+  /* ── PROJECTS ── */
+  #projects { background: var(--cream); }
+  .projects-header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 3.5rem; }
+  .projects-filter { display: flex; gap: .7rem; flex-wrap: wrap; }
+  .filter-btn {
+    font-size: .65rem; letter-spacing: .18em; text-transform: uppercase;
+    padding: .5rem 1.1rem; border: 1px solid rgba(26,22,18,.25);
+    background: transparent; color: var(--muted);
+    transition: all .25s;
+  }
+  .filter-btn.active, .filter-btn:hover {
+    border-color: var(--gold); color: var(--ink); background: rgba(201,168,76,.08);
+  }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .project-card {
+    position: relative; overflow: hidden;
+    aspect-ratio: 3/4;
+    background: var(--warm);
+  }
+  .project-card:nth-child(1) { grid-column: span 2; aspect-ratio: auto; min-height: 500px; }
+  .project-card:nth-child(5) { grid-column: span 2; }
+  .project-card:nth-child(9) { grid-column: span 2; }
+
+  .project-img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .7s cubic-bezier(.25,.46,.45,.94);
+  }
+  .project-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(26,22,18,.85) 0%, transparent 55%);
+    opacity: 0; transition: opacity .35s;
+    display: flex; align-items: flex-end; padding: 1.8rem;
+  }
+  .project-card:hover .project-img { transform: scale(1.06); }
+  .project-card:hover .project-overlay { opacity: 1; }
+  .project-info { color: var(--cream); }
+  .project-cat {
+    font-size: .6rem; letter-spacing: .25em; text-transform: uppercase;
+    color: var(--gold-lt); margin-bottom: .4rem;
+  }
+  .project-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem; font-weight: 400;
+  }
+
+  /* colourful product images using CSS backgrounds */
+  .bg-cobalt   { background: linear-gradient(135deg,#1a4bbd 0%,#0d2a6e 100%); }
+  .bg-terracotta { background: linear-gradient(135deg,#c7522a 0%,#8b2500 100%); }
+  .bg-forest   { background: linear-gradient(135deg,#2d6a4f 0%,#1b4332 100%); }
+  .bg-lavender { background: linear-gradient(135deg,#7b5ea7 0%,#4a2c6b 100%); }
+  .bg-blush    { background: linear-gradient(135deg,#e8a09a 0%,#c5655c 100%); }
+  .bg-charcoal { background: linear-gradient(135deg,#3d3d3d 0%,#1a1a1a 100%); }
+  .bg-sage     { background: linear-gradient(135deg,#87a987 0%,#4a6741 100%); }
+  .bg-mustard  { background: linear-gradient(135deg,#d4a017 0%,#9b6a00 100%); }
+  .bg-wood     { background: linear-gradient(135deg,#8B5E3C 0%,#5C3317 100%); }
+  .bg-multi    { background: linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff); }
+
+  /* Faux product shapes in CSS */
+  .product-scene {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .wood-texture {
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) 20px,
+      rgba(255,255,255,.03) 20px,
+      rgba(255,255,255,.03) 21px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 8px,
+      rgba(0,0,0,.04) 8px,
+      rgba(0,0,0,.04) 9px
+    );
+  }
+  .product-bottle {
+    width: 70px; height: 160px;
+    background: linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.6) 100%);
+    border-radius: 12px 12px 4px 4px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 4px 0 12px rgba(255,255,255,.4);
+    position: relative; flex-shrink: 0;
+  }
+  .product-bottle::before {
+    content: ''; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    width: 22px; height: 26px;
+    background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.6));
+    border-radius: 4px 4px 0 0;
+  }
+  .product-bottle::after {
+    content: ''; position: absolute; top: 30%; left: 10%; right: 10%; height: 35%;
+    background: rgba(255,255,255,.15); border-radius: 4px;
+  }
+  .product-jar {
+    width: 110px; height: 90px;
+    background: linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.75) 100%);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 4px 0 12px rgba(255,255,255,.4);
+    position: relative;
+  }
+  .product-jar::before {
+    content: ''; position: absolute; top: -18px; left: 10%; right: 10%; height: 20px;
+    background: rgba(255,255,255,.85); border-radius: 6px 6px 0 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,.15);
+  }
+  .product-box {
+    width: 100px; height: 130px;
+    background: rgba(255,255,255,.9);
+    border-radius: 4px;
+    box-shadow: 10px 10px 30px rgba(0,0,0,.35), -2px -2px 8px rgba(255,255,255,.3);
+    position: relative;
+  }
+  .product-box::before {
+    content: ''; position: absolute; top: 0; right: -16px; width: 16px; height: 100%;
+    background: rgba(255,255,255,.6); transform: skewY(0deg);
+    clip-path: polygon(0 0, 100% 4%, 100% 96%, 0 100%);
+  }
+  .product-can {
+    width: 80px; height: 130px;
+    background: linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.65) 100%);
+    border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 5px 0 14px rgba(255,255,255,.4);
+  }
+  .product-tube {
+    width: 50px; height: 150px;
+    background: linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.6) 100%);
+    border-radius: 8px 8px 4px 4px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    position: relative; transform: rotate(-8deg);
+  }
+  .product-tube::after {
+    content: ''; position: absolute; bottom: -6px; left: 20%; right: 20%; height: 10px;
+    background: rgba(255,255,255,.8); border-radius: 0 0 8px 8px;
+  }
+  .multi-products {
+    display: flex; gap: 12px; align-items: flex-end;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,.4));
+  }
+
+  /* scene helper */
+  .scene-shadow {
+    position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+    width: 60%; height: 20px;
+    background: radial-gradient(ellipse, rgba(0,0,0,.35), transparent 70%);
+  }
+
+  /* ── ABOUT ── */
+  #about { background: var(--ink); color: var(--cream); }
+  #about .section-title { color: var(--cream); }
+  #about .section-sub { color: rgba(245,240,232,.6); max-width: 560px; }
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5vw; align-items: center; margin-top: 3rem; }
+  .about-image-wrap { position: relative; }
+  .about-main-img {
+    width: 100%; aspect-ratio: 3/4; object-fit: cover;
+    border: 1px solid rgba(201,168,76,.3);
+  }
+  .about-accent {
+    position: absolute; bottom: -2rem; right: -2rem;
+    width: 55%; aspect-ratio: 1;
+    border: 1px solid rgba(201,168,76,.5);
+    overflow: hidden;
+  }
+  .about-accent img { width: 100%; height: 100%; object-fit: cover; }
+  .about-text { padding-left: 2rem; }
+  .about-text p { font-size: .83rem; line-height: 1.9; color: rgba(245,240,232,.7); margin-bottom: 1.4rem; }
+  .about-text .divider { background: var(--gold); }
+
+  /* ── PROCESS ── */
+  #process { background: var(--cream); }
+  .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; margin-top: 4rem; background: rgba(26,22,18,.08); }
+  .process-step { background: var(--cream); padding: 2.8rem 2rem; }
+  .step-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem; color: rgba(201,168,76,.18); font-weight: 300; line-height: 1;
+  }
+  .step-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; margin: .8rem 0 .6rem; }
+  .step-desc { font-size: .76rem; line-height: 1.8; color: var(--muted); }
+
+  /* ── REVIEWS ── */
+  #reviews { background: var(--warm); overflow: hidden; }
+  .reviews-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem; }
+  .reviews-avg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem; color: var(--gold); line-height: 1;
+  }
+  .reviews-avg small { font-size: 1rem; color: var(--muted); font-family: 'Montserrat', sans-serif; }
+  .stars { color: var(--gold); font-size: .95rem; letter-spacing: 2px; }
+  .stars-small { color: var(--gold); font-size: .8rem; }
+  .reviews-track-wrap { overflow: hidden; position: relative; }
+  .reviews-track-wrap::before,
+  .reviews-track-wrap::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 80px; z-index: 2;
+    pointer-events: none;
+  }
+  .reviews-track-wrap::before { left: 0; background: linear-gradient(to right, var(--warm), transparent); }
+  .reviews-track-wrap::after { right: 0; background: linear-gradient(to left, var(--warm), transparent); }
+
+  .reviews-track {
+    display: flex; gap: 1.5rem;
+    width: max-content;
+    animation: scroll-left 60s linear infinite;
+  }
+  .reviews-track:hover { animation-play-state: paused; }
+
+  @keyframes scroll-left {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .review-card {
+    background: var(--cream); padding: 2rem;
+    width: 300px; flex-shrink: 0;
+    border: 1px solid rgba(201,168,76,.15);
+    border-top: 2px solid var(--gold);
+  }
+  .review-header { display: flex; align-items: center; gap: .85rem; margin-bottom: 1.1rem; }
+  .review-avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    object-fit: cover; border: 2px solid var(--gold-lt);
+    background: var(--warm); flex-shrink: 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    color: var(--gold);
+  }
+  .review-name { font-size: .8rem; font-weight: 500; }
+  .review-role { font-size: .68rem; color: var(--muted); }
+  .review-text { font-size: .77rem; line-height: 1.75; color: var(--muted); }
+
+  /* second row of reviews static grid */
+  .reviews-grid-static {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem; margin-top: 3rem;
+  }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--ink); color: var(--cream); }
+  #contact .section-title { color: var(--cream); }
+  #contact .section-sub { color: rgba(245,240,232,.6); }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 5vw; margin-top: 3.5rem; align-items: start; }
+  .contact-info p { font-size: .83rem; line-height: 1.85; color: rgba(245,240,232,.65); margin-bottom: 2rem; }
+  .contact-detail { display: flex; flex-direction: column; gap: 1.2rem; }
+  .contact-item { display: flex; align-items: flex-start; gap: 1rem; }
+  .contact-icon { width: 40px; height: 40px; border: 1px solid rgba(201,168,76,.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--gold); font-size: 1rem; }
+  .contact-label { font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; color: rgba(245,240,232,.4); }
+  .contact-val { font-size: .83rem; color: var(--cream); }
+
+  .contact-form { display: flex; flex-direction: column; gap: 1.2rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  .form-group { display: flex; flex-direction: column; gap: .45rem; }
+  .form-group label { font-size: .65rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(245,240,232,.5); }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    color: var(--cream); padding: .9rem 1.1rem; font-family: 'Montserrat', sans-serif; font-size: .8rem;
+    outline: none; transition: border-color .25s; resize: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--gold); }
+  .form-group select option { background: #2a2420; }
+  .form-submit {
+    font-size: .72rem; letter-spacing: .2em; text-transform: uppercase;
+    padding: 1.1rem 2.8rem; background: var(--gold); color: var(--ink);
+    border: none; font-family: 'Montserrat', sans-serif; font-weight: 600;
+    margin-top: .5rem; transition: background .25s;
+    align-self: flex-start;
+  }
+  .form-submit:hover { background: var(--gold-lt); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #0e0c0a; color: rgba(245,240,232,.4);
+    padding: 2.5rem 5vw; font-size: .72rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    border-top: 1px solid rgba(201,168,76,.12);
+  }
+  .footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--cream); font-weight: 300; letter-spacing: .12em; }
+  .footer-logo span { color: var(--gold); }
+  .footer-links { display: flex; gap: 2rem; list-style: none; }
+  .footer-links a { color: rgba(245,240,232,.4); text-decoration: none; letter-spacing: .12em; transition: color .25s; }
+  .footer-links a:hover { color: var(--gold); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(60px); }
+    to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity .7s ease, transform .7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── MOBILE NAV ── */
+  .mobile-menu {
+    display: none; position: fixed; inset: 0; z-index: 800;
+    background: rgba(245,240,232,.97); backdrop-filter: blur(16px);
+    flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a {
+    font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 300;
+    color: var(--ink); text-decoration: none; letter-spacing: .06em;
+  }
+  .mobile-menu a:hover { color: var(--gold); }
+  .close-menu {
+    position: absolute; top: 1.5rem; right: 5vw;
+    font-size: 2rem; background: none; border: none; color: var(--ink);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    .hero-visual { display: none; }
+    #home { min-height: auto; padding: 7rem 5vw 4rem; }
+    .projects-grid { grid-template-columns: repeat(2, 1fr); }
+    .project-card:nth-child(1) { grid-column: span 2; }
+    .project-card:nth-child(5),
+    .project-card:nth-child(9) { grid-column: span 1; }
+    .about-grid { grid-template-columns: 1fr; }
+    .about-accent { display: none; }
+    .about-text { padding-left: 0; }
+    .contact-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .nav-links, .nav-cta { display: none; }
+    .hamburger { display: flex; }
+    .projects-grid { grid-template-columns: 1fr; }
+    .project-card:nth-child(1) { grid-column: span 1; min-height: 360px; }
+    .project-card:nth-child(5),
+    .project-card:nth-child(9) { grid-column: span 1; }
+    .form-row { grid-template-columns: 1fr; }
+    .stats-bar { gap: .5rem; }
+    .hero-title { font-size: 2.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CUSTOM CURSOR -->
+<div id="cursor-ring"></div>
+<div id="cursor-dot"></div>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="close-menu" id="closeMenu" aria-label="Close menu">✕</button>
+  <a href="#home" onclick="closeMobile()">Home</a>
+  <a href="#projects" onclick="closeMobile()">Work</a>
+  <a href="#services" onclick="closeMobile()">Services</a>
+  <a href="#about" onclick="closeMobile()">About</a>
+  <a href="#reviews" onclick="closeMobile()">Reviews</a>
+  <a href="#contact" onclick="closeMobile()">Contact</a>
+</div>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <a href="#home" class="nav-logo">Maya<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#projects">Work</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#reviews">Reviews</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Book a Shoot</a>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section id="home">
+  <div class="hero-bg"></div>
+  <div class="hero-grain"></div>
+  <div class="hero-content">
+    <span class="hero-tag">✦ UGC Studio &amp; Product Photography</span>
+    <h1 class="hero-title">Where Products<br>Become <em>Stories</em></h1>
+    <p class="hero-sub">Studio-level UGC content, cinematic product imagery, and scroll-stopping video — crafted to convert browsers into buyers.</p>
+    <div class="hero-btns">
+      <a href="#projects" class="btn-primary">View Work</a>
+      <a href="#contact" class="btn-ghost">Get in Touch</a>
+    </div>
+  </div>
+  <!-- Hero visual mosaic (CSS product scenes) -->
+  <div class="hero-visual">
+    <div class="hero-mosaic">
+      <div class="cell">
+        <div class="product-scene bg-cobalt" style="height:100%">
+          <div class="wood-texture"></div>
+          <div class="multi-products"><div class="product-bottle"></div><div class="product-can"></div></div>
+          <div class="scene-shadow"></div>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="product-scene bg-blush" style="height:100%">
+          <div class="wood-texture"></div>
+          <div class="product-jar"></div>
+          <div class="scene-shadow"></div>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="product-scene bg-forest" style="height:100%">
+          <div class="wood-texture"></div>
+          <div class="product-tube"></div>
+          <div class="scene-shadow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat"><span class="stat-num">340+</span><span class="stat-label">Projects Delivered</span></div>
+  <div class="stat"><span class="stat-num">120+</span><span class="stat-label">Happy Clients</span></div>
+  <div class="stat"><span class="stat-num">4.9★</span><span class="stat-label">Average Rating</span></div>
+  <div class="stat"><span class="stat-num">48h</span><span class="stat-label">Turnaround</span></div>
+</div>
+
+<!-- ══ SERVICES ══ -->
+<section id="services">
+  <div class="reveal">
+    <p class="section-eyebrow">✦ What We Do</p>
+    <h2 class="section-title">Studio-Grade <em>Creative</em><br>for Every Platform</h2>
+    <div class="divider"></div>
+    <p class="section-sub">From concept to content, we handle every frame — so your brand shows up beautifully everywhere that matters.</p>
+  </div>
+  <div class="services-grid reveal">
+    <div class="service-card">
+      <div class="service-num">01</div>
+      <div class="service-name">UGC Video Content</div>
+      <p class="service-desc">Authentic, creator-style short-form videos designed for TikTok, Reels, and paid media — built to convert.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-num">02</div>
+      <div class="service-name">Product Photography</div>
+      <p class="service-desc">Studio-lit product images with colourful, textured backgrounds — wood, marble, bold gradients — that demand attention.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-num">03</div>
+      <div class="service-name">Lifestyle Imagery</div>
+      <p class="service-desc">In-context product photography that shows your product in the real world, evoking emotion and aspiration.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-num">04</div>
+      <div class="service-name">Ad Creative Packs</div>
+      <p class="service-desc">Complete creative bundles — statics, videos, and copy hooks — optimised for Meta, Google, and TikTok ads.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-num">05</div>
+      <div class="service-name">Unboxing &amp; Review</div>
+      <p class="service-desc">Polished unboxing videos that build trust, drive reviews, and convert fence-sitters at the point of purchase.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-num">06</div>
+      <div class="service-name">Brand Storytelling</div>
+      <p class="service-desc">Narrative-led content series that articulate your brand voice across every touchpoint and campaign.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PROJECTS ══ -->
+<section id="projects">
+  <div class="projects-header reveal">
+    <div>
+      <p class="section-eyebrow">✦ Selected Work</p>
+      <h2 class="section-title">The <em>Portfolio</em></h2>
+    </div>
+    <div class="projects-filter">
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Photography</button>
+      <button class="filter-btn">Video</button>
+      <button class="filter-btn">UGC</button>
+    </div>
+  </div>
+  <div class="projects-grid reveal">
+
+    <!-- Card 1 — span 2 — cobalt + wood + multiple bottles -->
+    <div class="project-card">
+      <div class="product-scene bg-cobalt" style="height:100%">
+        <div class="wood-texture"></div>
+        <div style="display:flex;gap:20px;align-items:flex-end;filter:drop-shadow(0 20px 50px rgba(0,0,0,.5))">
+          <div class="product-bottle" style="height:180px;width:65px"></div>
+          <div class="product-bottle" style="height:220px;width:72px"></div>
+          <div class="product-bottle" style="height:160px;width:60px"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Product Photography</div>
+          <div class="project-title">Azure Skincare Collection</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 — terracotta + jar -->
+    <div class="project-card">
+      <div class="product-scene bg-terracotta">
+        <div class="wood-texture"></div>
+        <div class="product-jar" style="width:120px;height:100px"></div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">UGC Video</div>
+          <div class="project-title">Ember Clay Face Mask</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 — lavender + tube -->
+    <div class="project-card">
+      <div class="product-scene bg-lavender">
+        <div class="wood-texture"></div>
+        <div style="display:flex;gap:16px;align-items:flex-end;filter:drop-shadow(0 16px 40px rgba(0,0,0,.45))">
+          <div class="product-tube"></div>
+          <div class="product-tube" style="height:120px;transform:rotate(8deg)"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Lifestyle</div>
+          <div class="project-title">Bloom Body Serum</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4 — wood + box -->
+    <div class="project-card">
+      <div class="product-scene bg-wood">
+        <div class="wood-texture"></div>
+        <div class="product-box" style="width:110px;height:140px;background:rgba(255,255,255,.88)"></div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Ad Creative</div>
+          <div class="project-title">Noir Gift Box Set</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5 — span 2 — multi-colour gradient -->
+    <div class="project-card">
+      <div class="product-scene bg-multi" style="height:100%">
+        <div style="display:flex;gap:16px;align-items:flex-end;filter:drop-shadow(0 20px 50px rgba(0,0,0,.4))">
+          <div class="product-can" style="height:140px"></div>
+          <div class="product-bottle" style="height:170px"></div>
+          <div class="product-jar" style="width:95px;height:80px"></div>
+          <div class="product-can" style="height:120px"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Brand Pack</div>
+          <div class="project-title">Chroma Supplement Line</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6 — sage -->
+    <div class="project-card">
+      <div class="product-scene bg-sage">
+        <div class="wood-texture"></div>
+        <div style="filter:drop-shadow(0 16px 40px rgba(0,0,0,.4))">
+          <div class="product-jar" style="width:130px;height:105px"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Photography</div>
+          <div class="project-title">Botanica Face Cream</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 7 — mustard + can -->
+    <div class="project-card">
+      <div class="product-scene bg-mustard">
+        <div class="wood-texture"></div>
+        <div style="display:flex;gap:14px;align-items:flex-end;filter:drop-shadow(0 16px 40px rgba(0,0,0,.4))">
+          <div class="product-can"></div>
+          <div class="product-can" style="height:110px"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">UGC Video</div>
+          <div class="project-title">Golden Energy Drink</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 8 — charcoal + box -->
+    <div class="project-card">
+      <div class="product-scene bg-charcoal">
+        <div class="wood-texture"></div>
+        <div style="display:flex;gap:12px;align-items:flex-end;filter:drop-shadow(0 16px 40px rgba(0,0,0,.5))">
+          <div class="product-box" style="background:rgba(255,255,255,.85)"></div>
+          <div class="product-box" style="background:rgba(255,255,255,.7);height:110px;width:90px"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Luxury Brand</div>
+          <div class="project-title">Obsidian Fragrance</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 9 — span 2 — blush + full set -->
+    <div class="project-card">
+      <div class="product-scene bg-blush" style="height:100%">
+        <div style="display:flex;gap:18px;align-items:flex-end;filter:drop-shadow(0 20px 50px rgba(0,0,0,.4))">
+          <div class="product-tube" style="height:130px"></div>
+          <div class="product-jar" style="width:100px;height:85px"></div>
+          <div class="product-bottle" style="height:190px;width:68px"></div>
+          <div class="product-tube" style="height:110px;transform:rotate(10deg)"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Full Campaign</div>
+          <div class="project-title">Rose Atelier Beauty Edit</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 10 — forest -->
+    <div class="project-card">
+      <div class="product-scene bg-forest">
+        <div class="wood-texture"></div>
+        <div style="filter:drop-shadow(0 16px 40px rgba(0,0,0,.45))">
+          <div class="product-bottle" style="height:200px;width:74px"></div>
+        </div>
+        <div class="scene-shadow"></div>
+      </div>
+      <div class="project-overlay">
+        <div class="project-info">
+          <div class="project-cat">Organic Brand</div>
+          <div class="project-title">Verdure Hair Elixir</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ ABOUT ══ -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-image-wrap reveal">
+      <div style="width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,#2d2420 0%,#1a120e 100%);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 60% 40%,rgba(201,168,76,.12),transparent)"></div>
+        <div style="text-align:center;position:relative;z-index:1">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:5rem;font-weight:300;color:rgba(201,168,76,.3);line-height:1">M</div>
+          <div style="font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(201,168,76,.5);margin-top:.5rem">Maya Studio</div>
+        </div>
+        <!-- decorative product -->
+        <div style="position:absolute;bottom:15%;left:50%;transform:translateX(-50%)">
+          <div style="display:flex;gap:12px;align-items:flex-end;filter:drop-shadow(0 16px 40px rgba(0,0,0,.6))">
+            <div class="product-bottle" style="height:140px;width:50px;background:linear-gradient(180deg,rgba(201,168,76,.7),rgba(201,168,76,.4))"></div>
+            <div class="product-jar" style="width:80px;height:68px;background:rgba(201,168,76,.5)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="about-accent">
+        <div style="width:100%;height:100%;background:linear-gradient(135deg,#8b3a3a,#5c1e1e);display:flex;align-items:center;justify-content:center">
+          <div class="product-can" style="background:rgba(255,255,255,.8);filter:drop-shadow(0 10px 30px rgba(0,0,0,.4))"></div>
+        </div>
+      </div>
+    </div>
+    <div class="about-text reveal">
+      <p class="section-eyebrow" style="color:var(--gold)">✦ About Maya</p>
+      <h2 class="section-title" style="color:var(--cream)">Crafting <em>Visual</em><br>Narratives that Sell</h2>
+      <div class="divider"></div>
+      <p>Maya is a boutique UGC and product photography studio obsessed with one thing: making your product impossible to scroll past. We combine studio precision with creator authenticity to produce content that converts.</p>
+      <p>With over 340 campaigns delivered across beauty, wellness, food, and tech, we've built a reputation for colourful, textured, editorial-quality visuals that brands keep coming back for.</p>
+      <p>Every shoot is a collaboration — we take the time to understand your brand, your audience, and your goals before a single frame is captured.</p>
+      <a href="#contact" class="btn-primary" style="display:inline-block;margin-top:1rem">Work With Us</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PROCESS ══ -->
+<section id="process">
+  <div class="reveal" style="text-align:center;max-width:520px;margin:0 auto 0">
+    <p class="section-eyebrow">✦ How It Works</p>
+    <h2 class="section-title">From Brief to <em>Beautiful</em></h2>
+    <div class="divider" style="margin:1.6rem auto"></div>
+  </div>
+  <div class="process-steps reveal">
+    <div class="process-step">
+      <div class="step-num">01</div>
+      <div class="step-title">Discovery Call</div>
+      <p class="step-desc">We learn your brand, product, target audience, and campaign goals in a focused 30-minute brief.</p>
+    </div>
+    <div class="process-step">
+      <div class="step-num">02</div>
+      <div class="step-title">Creative Strategy</div>
+      <p class="step-desc">Our team develops a mood board, shot list, and content plan aligned to your platform and budget.</p>
+    </div>
+    <div class="process-step">
+      <div class="step-num">03</div>
+      <div class="step-title">Production</div>
+      <p class="step-desc">Studio shoot with professional lighting, styled backgrounds, and multiple formats captured in a single session.</p>
+    </div>
+    <div class="process-step">
+      <div class="step-num">04</div>
+      <div class="step-title">Edit &amp; Deliver</div>
+      <p class="step-desc">Retouched, colour-graded files delivered in 48 hours — ready to upload, run, and scale.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ REVIEWS ══ -->
+<section id="reviews">
+  <div class="reviews-header reveal">
+    <div>
+      <p class="section-eyebrow">✦ Client Love</p>
+      <h2 class="section-title">What Brands Are<br><em>Saying</em></h2>
+    </div>
+    <div style="text-align:right">
+      <div class="reviews-avg">4.9 <small>/ 5</small></div>
+      <div class="stars">★★★★★</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:.3rem">Based on 127 reviews</div>
+    </div>
+  </div>
+
+  <!-- Scrolling row 1 -->
+  <div class="reviews-track-wrap">
+    <div class="reviews-track" id="track1">
+
+      <!-- Reviews 1-12 (duplicated below for infinite loop) -->
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4a0a0;color:#5c2020">S</div>
+          <div><div class="review-name">Sophia Patel</div><div class="review-role">Founder, Glow Ritual</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Maya completely transformed how our products look online. The colourful backgrounds with that wooden texture finish — exactly what we needed. Sales jumped 34% after using her content."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#a0bcd4;color:#1a3a5c">J</div>
+          <div><div class="review-name">James Okafor</div><div class="review-role">CMO, Vitacore Supplements</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"We've worked with 6 UGC studios. Maya is on a different level. The attention to lighting, colour palette, and composition is genuinely studio-grade."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#b8d4a0;color:#2a4a1a">A</div>
+          <div><div class="review-name">Aanya Mehta</div><div class="review-role">Brand Manager, Botanica</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Delivered 20 product shots in under 48 hours, all with those gorgeous vibrant backdrops. Every image was usable. Zero reshoots needed."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4c4a0;color:#5c4a20">R</div>
+          <div><div class="review-name">Ryan Chen</div><div class="review-role">E-commerce Director, LuxeKin</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Our ROAS went from 1.8x to 3.4x after switching to Maya's ad creatives. The UGC video content feels authentic but looks incredibly polished."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4a0c4;color:#5c1a4a">L</div>
+          <div><div class="review-name">Layla Hassan</div><div class="review-role">Founder, Amara Beauty</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"I sent Maya two products and a two-line brief. What came back was a full creative campaign that told our brand story perfectly. Absolutely magical."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#a0d4cc;color:#1a4a46">T</div>
+          <div><div class="review-name">Tom Nakamura</div><div class="review-role">Growth Lead, Surge Drinks</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"The multi-colour gradient shots for our energy drink line were exactly what we envisioned but couldn't articulate. Maya just got it."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4b8a0;color:#5c3020">P</div>
+          <div><div class="review-name">Priya Rao</div><div class="review-role">DTC Lead, Herb & Co</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Our Instagram engagement doubled the month we rolled out Maya's content pack. The aesthetic is consistent, elevated, and incredibly scroll-stopping."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#c4a0d4;color:#3a1a5c">M</div>
+          <div><div class="review-name">Marco Esposito</div><div class="review-role">Creative Director, Solara</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Most UGC content looks the same. Maya's work stands out — you can see the compositional thought in every single frame. Truly exceptional."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#a0c4b8;color:#1a3c30">N</div>
+          <div><div class="review-name">Nina Johansson</div><div class="review-role">Marketing Head, NordSkin</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"We were nervous about our first UGC campaign. Maya made the whole process effortless — clear communication, fast delivery, and content that actually converts."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4a0a8;color:#5c1a24">C</div>
+          <div><div class="review-name">Camille Dubois</div><div class="review-role">Brand Director, Fleuri</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"The wooden surface with colourful backdrops trend is everywhere, but Maya does it with such refinement. Our products have never looked more desirable."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#a0b4d4;color:#1a2a5c">K</div>
+          <div><div class="review-name">Kiran Shah</div><div class="review-role">Founder, KiraGlow</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Hired Maya for a 10-video UGC pack. Every video hit differently. The storytelling, the transitions, the product framing — all top-tier."</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#c4d4a0;color:#3a4a1a">D</div>
+          <div><div class="review-name">Diego Reyes</div><div class="review-role">CMO, FreshRoots</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Maya's lifestyle shots gave our organic food brand the premium feel we've been chasing for years. Worth every rupee."</p>
+      </div>
+
+      <!-- Duplicate for seamless loop -->
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4a0a0;color:#5c2020">S</div>
+          <div><div class="review-name">Sophia Patel</div><div class="review-role">Founder, Glow Ritual</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Maya completely transformed how our products look online. The colourful backgrounds with that wooden texture finish — exactly what we needed. Sales jumped 34%."</p>
+      </div>
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#a0bcd4;color:#1a3a5c">J</div>
+          <div><div class="review-name">James Okafor</div><div class="review-role">CMO, Vitacore Supplements</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"We've worked with 6 UGC studios. Maya is on a different level. The attention to lighting, colour palette, and composition is genuinely studio-grade."</p>
+      </div>
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#b8d4a0;color:#2a4a1a">A</div>
+          <div><div class="review-name">Aanya Mehta</div><div class="review-role">Brand Manager, Botanica</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Delivered 20 product shots in under 48 hours, all with those gorgeous vibrant backdrops. Every image was usable. Zero reshoots needed."</p>
+      </div>
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:#d4c4a0;color:#5c4a20">R</div>
+          <div><div class="review-name">Ryan Chen</div><div class="review-role">E-commerce Director, LuxeKin</div></div>
+        </div>
+        <div class="stars-small">★★★★★</div>
+        <p class="review-text" style="margin-top:.7rem">"Our ROAS went from 1.8x to 3.4x after switching to Maya's ad creatives. The UGC video content feels authentic but looks incredibly polished."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Static grid — more reviews -->
+  <div class="reviews-grid-static reveal" style="margin-top:3rem">
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#f0c8a0;color:#6b3a10">Z</div>
+        <div><div class="review-name">Zara Farouk</div><div class="review-role">Founder, Lune Luxe</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"The unboxing video Maya produced for our launch got shared over 4,000 times organically. It was cinematic in a way no one expects from UGC."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#a8c8e0;color:#1a3a58">H</div>
+        <div><div class="review-name">Hugo Müller</div><div class="review-role">VP Marketing, KlarSkin</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"Professional, fast, and genuinely creative. Maya understood our German minimalist aesthetic and infused it with colour in a way we'd never tried before."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#c8a8e0;color:#3a1a58">I</div>
+        <div><div class="review-name">Isha Kapoor</div><div class="review-role">DTC Brand, Pūrna Wellness</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"We run TikTok Spark Ads exclusively with Maya's content now. The CPM and CTR are consistently the best in our account history."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#e0c8a8;color:#584018">B</div>
+        <div><div class="review-name">Ben Tran</div><div class="review-role">Co-Founder, Nōm Foods</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"Nailed our brand colour story in the very first pass. The product images on our Shopify store look like they belong in a magazine."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#e0a8c8;color:#58183e">F</div>
+        <div><div class="review-name">Fatima Al-Rashid</div><div class="review-role">Marketing Lead, Aura Cosmetics</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"I've worked with photographers in Dubai, London, and Mumbai. Maya's work is genuinely world-class — and the pricing is far more accessible."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#a8e0c8;color:#184038">O</div>
+        <div><div class="review-name">Oluwaseun Ade</div><div class="review-role">E-comm Lead, Afri-Natural</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"The warm wood backgrounds with our earthy product palette were a match made in heaven. Bookings started coming in the week we launched this content."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#e0e0a8;color:#484818">Y</div>
+        <div><div class="review-name">Yuki Tanaka</div><div class="review-role">Brand Strategist, Shiro</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"Clean, precise, and unmistakably creative. The Japandi minimalism we asked for — but with Maya's signature pop of colour. Rare talent."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#c8e0a8;color:#284018">G</div>
+        <div><div class="review-name">Grace Osei</div><div class="review-role">Founder, Glowvana</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"Our Black Friday campaign ran entirely on Maya's content. Best-ever Black Friday revenue. I don't know if it was the ads or the content — but the content was exceptional."</p>
+    </div>
+
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-avatar" style="background:#a8a8e0;color:#18185c">V</div>
+        <div><div class="review-name">Vikram Nair</div><div class="review-role">Growth Marketer, NourishMe</div></div>
+      </div>
+      <div class="stars-small">★★★★★</div>
+      <p class="review-text" style="margin-top:.7rem">"Fast, professional, and creative. Maya asked two clarifying questions, then delivered 15 assets that needed zero edits. Dream collaboration."</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ CONTACT ══ -->
+<section id="contact">
+  <div class="reveal">
+    <p class="section-eyebrow" style="color:var(--gold)">✦ Let's Work Together</p>
+    <h2 class="section-title" style="color:var(--cream)">Ready to Make Your<br>Product <em>Unforgettable?</em></h2>
+    <div class="divider"></div>
+    <p class="section-sub">Fill in the brief below and we'll get back to you within 24 hours with a tailored proposal.</p>
+  </div>
+  <div class="contact-grid">
+    <div class="contact-info reveal">
+      <p>We work with brands of all sizes — from indie DTC startups to global e-commerce giants. Every project gets the same obsessive attention to detail.</p>
+      <div class="contact-detail">
+        <div class="contact-item">
+          <div class="contact-icon">✉</div>
+          <div>
+            <div class="contact-label">Email</div>
+            <div class="contact-val">hello@mayastudio.co</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">📱</div>
+          <div>
+            <div class="contact-label">WhatsApp</div>
+            <div class="contact-val">+91 98765 43210</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">⏱</div>
+          <div>
+            <div class="contact-label">Turnaround</div>
+            <div class="contact-val">48 hours standard delivery</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">🌐</div>
+          <div>
+            <div class="contact-label">Serving</div>
+            <div class="contact-val">Global — India, UK, US, UAE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <form class="contact-form reveal" onsubmit="handleSubmit(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" placeholder="Aryan">
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" placeholder="Sharma">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" placeholder="aryan@yourbrand.com">
+      </div>
+      <div class="form-group">
+        <label>Brand / Company</label>
+        <input type="text" placeholder="Your brand name">
+      </div>
+      <div class="form-group">
+        <label>Service Needed</label>
+        <select>
+          <option>UGC Video Content</option>
+          <option>Product Photography</option>
+          <option>Lifestyle Imagery</option>
+          <option>Ad Creative Pack</option>
+          <option>Full Campaign</option>
+          <option>Something else...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tell Us About Your Project</label>
+        <textarea rows="5" placeholder="Product type, quantity, style reference, deadline..."></textarea>
+      </div>
+      <button type="submit" class="form-submit">Send Brief →</button>
+      <div id="formSuccess" style="display:none;font-size:.78rem;color:var(--gold-lt);margin-top:.5rem">✓ Brief received! We'll be in touch within 24 hours.</div>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">Maya<span>.</span></span>
+  <ul class="footer-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#projects">Work</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <span style="font-size:.68rem;letter-spacing:.1em">© 2025 Maya Studio. All rights reserved.</span>
+</footer>
+
+<script>
+  /* ── CURSOR ── */
+  const ring = document.getElementById('cursor-ring');
+  const dot  = document.getElementById('cursor-dot');
+  let mx = -100, my = -100, rx = -100, ry = -100;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  const hoverEls = 'a, button, .project-card, .service-card, .filter-btn, input, textarea, select';
+  document.querySelectorAll(hoverEls).forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+
+  (function loop() {
+    rx += (mx - rx) * .15;
+    ry += (my - ry) * .15;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    dot.style.left  = mx + 'px';
+    dot.style.top   = my + 'px';
+    requestAnimationFrame(loop);
+  })();
+
+  /* ── NAV SCROLL ── */
+  const nav = document.getElementById('mainNav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  /* ── MOBILE MENU ── */
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('mobileMenu').classList.add('open');
+  });
+  document.getElementById('closeMenu').addEventListener('click', closeMobile);
+  function closeMobile() { document.getElementById('mobileMenu').classList.remove('open'); }
+
+  /* ── SCROLL REVEAL ── */
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: .12 });
+  reveals.forEach(r => obs.observe(r));
+
+  /* ── FILTER BUTTONS (visual only) ── */
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  /* ── FORM ── */
+  function handleSubmit(e) {
+    e.preventDefault();
+    document.getElementById('formSuccess').style.display = 'block';
+  }
+</script>
+</body>
+</html>
